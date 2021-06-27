@@ -1,0 +1,15 @@
+[package]
+name = "pinned-aliasable"
+version = "0.1.0"
+edition = "2018"
+description = "Unboxed aliasable values based on Pin"
+repository = "https://github.com/KaiJewson/pinned-aliasable"
+license = "MIT"
+keywords = ["aliasable", "pinned", "unboxed", "self-reference", "self-referencing"]
+categories = ["no-std", "rust-patterns"]
+
+[dependencies]
+pin-project-lite = "0.2.7"
+
+[dev-dependencies]
+pin-utils = "0.1.0"
