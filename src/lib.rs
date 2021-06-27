@@ -31,22 +31,21 @@
 //! use core::cell::Cell;
 //!
 //! use pinned_aliasable::Aliasable;
-//! use pin_project_lite::pin_project;
+//! use pin_project::{pin_project, pinned_drop};
 //! use pin_utils::pin_mut;
 //!
-//! pin_project! {
-//!     pub struct Pair {
-//!         #[pin]
-//!         inner: Aliasable<PairInner>,
-//!     }
-//! }
+//! #[pin_project(PinnedDrop)]
+//! pub struct Pair(#[pin] Aliasable<PairInner>);
+//!
 //! struct PairInner {
 //!     value: u64,
 //!     other: Cell<Option<&'static PairInner>>,
 //! }
-//! impl Drop for PairInner {
-//!     fn drop(&mut self) {
-//!         if let Some(other) = self.other.get() {
+//!
+//! #[pinned_drop]
+//! impl PinnedDrop for Pair {
+//!     fn drop(self: Pin<&mut Self>) {
+//!         if let Some(other) = self.project().0.as_ref().get().other.get() {
 //!             other.other.set(None);
 //!         }
 //!     }
@@ -54,21 +53,19 @@
 //!
 //! impl Pair {
 //!     pub fn new(value: u64) -> Self {
-//!         Self {
-//!             inner: Aliasable::new(PairInner {
-//!                 value,
-//!                 other: Cell::new(None),
-//!             })
-//!         }
+//!         Self(Aliasable::new(PairInner {
+//!             value,
+//!             other: Cell::new(None),
+//!         }))
 //!     }
 //!     pub fn get(self: Pin<&Self>) -> u64 {
-//!         self.project_ref().inner.get().other.get().unwrap().value
+//!         self.project_ref().0.get().other.get().unwrap().value
 //!     }
 //! }
 //!
 //! pub fn link_up(left: Pin<&Pair>, right: Pin<&Pair>) {
-//!     let left = unsafe { left.project_ref().inner.get_extended() };
-//!     let right = unsafe { right.project_ref().inner.get_extended() };
+//!     let left = unsafe { left.project_ref().0.get_extended() };
+//!     let right = unsafe { right.project_ref().0.get_extended() };
 //!     left.other.set(Some(right));
 //!     right.other.set(Some(left));
 //! }
@@ -81,8 +78,8 @@
 //!
 //!     link_up(pair_1.as_ref(), pair_2.as_ref());
 //!
-//!     println!("Pair 2 value: {}", pair_1.as_ref().get());
-//!     println!("Pair 1 value: {}", pair_2.as_ref().get());
+//!     assert_eq!(pair_1.as_ref().get(), 20);
+//!     assert_eq!(pair_2.as_ref().get(), 10);
 //! }
 //! ```
 #![no_std]

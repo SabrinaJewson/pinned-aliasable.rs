@@ -12,4 +12,5 @@ categories = ["no-std", "rust-patterns"]
 pin-project-lite = "0.2.7"
 
 [dev-dependencies]
+pin-project = "1.0.7"
 pin-utils = "0.1.0"
