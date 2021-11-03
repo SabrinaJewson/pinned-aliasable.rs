@@ -1,7 +1,7 @@
 [package]
 name = "pinned-aliasable"
 version = "0.1.1"
-edition = "2018"
+edition = "2021"
 description = "Pin-based stopgap for unboxed aliasable values in self-referential data structures"
 repository = "https://github.com/KaiJewson/pinned-aliasable"
 license = "MIT"
