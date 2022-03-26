@@ -95,16 +95,9 @@
 //! added to the language itself, I will be able to publish a new version of this crate internally
 //! based on it and yank all previous versions, which would then be unsound and obsolete.
 //!
-//! There is one final snag: Miri. Miri is a tool for running your Rust code and dynamically
-//! checking whether it is sound or not. If we used the main implementation of this crate under
-//! Miri, it would report all kinds of errors, because what we are doing is fundamentally unsound
-//! after all. So instead, when this crate detects that Miri is enabled it switches to a different
-//! backend that boxes the value in a way that is totally sound, but isn't used normally for
-//! efficiency reasons.
-//!
 //! And that's it! Although this crate is tiny, it is really useful for defining any kind of
 //! self-referential type because you no longer have to worry so much about whether you can cause
-//! miscompilations, _and_ you can run your tests under Miri.
+//! miscompilations.
 //!
 //! However, there is one important detail to be aware of. Remember how above I said that `Box`es
 //! are also treated as always-unique pointers? This is true, and unfortunately they don't get the
@@ -237,7 +230,6 @@
 #![no_std]
 #![warn(
     clippy::pedantic,
-    clippy::wrong_pub_self_convention,
     rust_2018_idioms,
     missing_docs,
     unused_qualifications,
@@ -252,21 +244,11 @@ use core::fmt::{self, Debug, Formatter};
 use core::marker::PhantomPinned;
 use core::pin::Pin;
 
-use pin_project_lite::pin_project;
-
-#[cfg_attr(miri, path = "boxed.rs")]
-#[cfg_attr(not(miri), path = "inline.rs")]
-mod base;
-
-pin_project! {
-    /// An unboxed aliasable value.
-    #[derive(Default)]
-    pub struct Aliasable<T> {
-        #[pin]
-        base: base::Aliasable<T>,
-        #[pin]
-        _pinned: PhantomPinned,
-    }
+/// An unboxed aliasable value.
+#[derive(Default)]
+pub struct Aliasable<T> {
+    val: T,
+    _pinned: PhantomPinned,
 }
 
 impl<T> Aliasable<T> {
@@ -275,7 +257,7 @@ impl<T> Aliasable<T> {
     #[inline]
     pub fn new(val: T) -> Self {
         Self {
-            base: base::Aliasable::new(val),
+            val,
             _pinned: PhantomPinned,
         }
     }
@@ -291,7 +273,7 @@ impl<T> Aliasable<T> {
     #[must_use]
     #[inline]
     pub fn get(self: Pin<&Self>) -> &T {
-        self.project_ref().base.get()
+        &self.get_ref().val
     }
 
     /// Get a shared reference to the value inside the `Aliasable` with an extended lifetime.
@@ -321,18 +303,17 @@ mod tests {
     use core::ops::DerefMut;
     use core::pin::Pin;
 
-    use pin_project_lite::pin_project;
+    use pin_project::pin_project;
 
     use super::Aliasable;
 
     #[test]
     fn miri_is_happy() {
-        pin_project! {
-            struct SelfRef {
-                #[pin]
-                value: Aliasable<UnsafeCell<i32>>,
-                reference: Option<&'static mut i32>,
-            }
+        #[pin_project]
+        struct SelfRef {
+            #[pin]
+            value: Aliasable<UnsafeCell<i32>>,
+            reference: Option<&'static mut i32>,
         }
 
         let self_ref = SelfRef {
@@ -357,12 +338,11 @@ mod tests {
 
     #[test]
     fn self_ref() {
-        pin_project! {
-            struct SelfRef {
-                reference: Option<&'static Cell<i32>>,
-                #[pin]
-                value: Aliasable<Cell<i32>>,
-            }
+        #[pin_project]
+        struct SelfRef {
+            reference: Option<&'static Cell<i32>>,
+            #[pin]
+            value: Aliasable<Cell<i32>>,
         }
 
         let mut self_ref = Box::pin(SelfRef {

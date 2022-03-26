@@ -9,7 +9,6 @@ keywords = ["aliasable", "pinned", "unboxed", "self-reference", "self-referencin
 categories = ["no-std", "rust-patterns"]
 
 [dependencies]
-pin-project-lite = "0.2.7"
 
 [dev-dependencies]
 pin-project = "1.0.7"
