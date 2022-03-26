@@ -96,16 +96,9 @@ compatible with the hypothetical libcore equivalent. As soon as `Aliasable<T>` _
 added to the language itself, I will be able to publish a new version of this crate internally
 based on it and yank all previous versions, which would then be unsound and obsolete.
 
-There is one final snag: Miri. Miri is a tool for running your Rust code and dynamically
-checking whether it is sound or not. If we used the main implementation of this crate under
-Miri, it would report all kinds of errors, because what we are doing is fundamentally unsound
-after all. So instead, when this crate detects that Miri is enabled it switches to a different
-backend that boxes the value in a way that is totally sound, but isn't used normally for
-efficiency reasons.
-
 And that's it! Although this crate is tiny, it is really useful for defining any kind of
 self-referential type because you no longer have to worry so much about whether you can cause
-miscompilations, _and_ you can run your tests under Miri.
+miscompilations.
 
 However, there is one important detail to be aware of. Remember how above I said that `Box`es
 are also treated as always-unique pointers? This is true, and unfortunately they don't get the
