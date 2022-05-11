@@ -286,6 +286,19 @@ impl<T> Aliasable<T> {
     pub unsafe fn get_extended<'a>(self: Pin<&Self>) -> &'a T {
         unsafe { &*(self.get() as *const T) }
     }
+
+    /// Consume the `Aliasable`, returning its inner value.
+    ///
+    /// If [`get`] has already been called and the type is now pinned, obtaining the owned
+    /// `Aliasable<T>` required to call this function requires breaking the pinning guarantee (as
+    /// the `Aliasable<T>` is moved). However, this is sound as long as the `Aliasable<T>` isn't
+    /// actually aliased at that point in time.
+    ///
+    /// [`get`]: Self::get
+    #[must_use]
+    pub fn into_inner(self) -> T {
+        self.val
+    }
 }
 
 impl<T> Debug for Aliasable<T> {
